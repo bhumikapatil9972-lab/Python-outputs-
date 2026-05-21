@@ -1,0 +1,411 @@
+# ============================================================
+# 8-Queens Problem — Pure Hill Climbing (No Random Restart)
+# Demonstrates the LOCAL MINIMA problem clearly
+# ============================================================
+
+# -------------------------------------------------------
+# Function: compute_conflicts
+# Counts attacking queen pairs — heuristic h(n)
+# Goal is h(n) = 0
+# -------------------------------------------------------
+def compute_conflicts(board):
+    conflicts = 0
+    n = len(board)
+    for i in range(n):
+        for j in range(i + 1, n):
+            if board[i] == board[j]:                    # Same row
+                conflicts += 1
+            if abs(board[i] - board[j]) == abs(i - j): # Diagonal
+                conflicts += 1
+    return conflicts
+
+# -------------------------------------------------------
+# Function: print_board
+# Prints the chessboard with conflict count
+# -------------------------------------------------------
+def print_board(board, label=""):
+    n = len(board)
+    if label:
+        print(f"\n{label}")
+    print("+" + "---+" * n)
+    for row in range(n):
+        line = "|"
+        for col in range(n):
+            if board[col] == row:
+                line += " Q |"
+            else:
+                line += " . |"
+        print(line)
+        print("+" + "---+" * n)
+    print(f"  Board         : {board}")
+    print(f"  Conflicts h(n): {compute_conflicts(board)}")
+
+# -------------------------------------------------------
+# Function: get_best_neighbour
+# Scans all 56 neighbours (move 1 queen in any column)
+# Returns the neighbour with the lowest h(n)
+# improved = False means no better neighbour found → stuck
+# -------------------------------------------------------
+def get_best_neighbour(board):
+    n              = len(board)
+    best_board     = board[:]
+    best_conflicts = compute_conflicts(board)
+    improved       = False
+
+    for col in range(n):
+        for row in range(n):
+            if row != board[col]:
+                neighbour      = board[:]
+                neighbour[col] = row
+                c              = compute_conflicts(neighbour)
+                if c < best_conflicts:
+                    best_conflicts = c
+                    best_board     = neighbour[:]
+                    improved       = True
+
+    return best_board, best_conflicts, improved
+
+# -------------------------------------------------------
+# Function: print_all_neighbours
+# Prints every neighbour and its h(n) to prove the
+# algorithm is genuinely stuck at a local minimum
+# -------------------------------------------------------
+def print_all_neighbours(board):
+    n         = len(board)
+    current_h = compute_conflicts(board)
+
+    print("\n" + "-" * 60)
+    print("  Proof: Analysing ALL 56 neighbours of local minimum")
+    print("-" * 60)
+    print(f"  {'Col':<5} {'New Row':<8} {'Neighbour Board':<32} {'h(n)':<6} {'Better?'}")
+    print("-" * 60)
+
+    any_better = False
+    for col in range(n):
+        for row in range(n):
+            if row != board[col]:
+                neighbour      = board[:]
+                neighbour[col] = row
+                h              = compute_conflicts(neighbour)
+                better         = "<-- YES" if h < current_h else ""
+                if h < current_h:
+                    any_better = True
+                print(f"  {col:<5} {row:<8} {str(neighbour):<32} {h:<6} {better}")
+        print()
+
+    print("-" * 60)
+    if not any_better:
+        print(f"  RESULT: NO neighbour has h(n) < {current_h}")
+        print("  CONCLUSION: Algorithm is stuck. Cannot move forward.")
+    print("-" * 60)
+
+# -------------------------------------------------------
+# Function: hill_climbing_no_restart
+# Pure hill climbing — stops the moment it gets stuck
+# -------------------------------------------------------
+def hill_climbing_no_restart(initial_board):
+    current_board     = initial_board[:]
+    current_conflicts = compute_conflicts(current_board)
+    iteration         = 0
+
+    print("=" * 60)
+    print("   8-Queens Problem - Pure Hill Climbing (No Restart)")
+    print("   Objective : Demonstrate the LOCAL MINIMA problem")
+    print("=" * 60)
+
+    print_board(current_board, label="INITIAL BOARD STATE:")
+
+    while True:
+        print("\n" + "-" * 60)
+        print(f"  ITERATION {iteration}")
+        print(f"  Current h(n) = {current_conflicts}")
+        print(f"  Scanning all 56 neighbours...")
+        print("-" * 60)
+
+        best_board, best_conflicts, improved = get_best_neighbour(current_board)
+
+        # Case 1 — Solution found
+        if current_conflicts == 0:
+            print("\n" + "=" * 60)
+            print("  *** SOLUTION FOUND ***")
+            print("=" * 60)
+            print_board(current_board, label="FINAL SOLUTION:")
+            print(f"\n  Solved in {iteration} iteration(s).")
+            return True
+
+        # Case 2 — Stuck at local minimum
+        if not improved:
+            print(f"  Best neighbour h(n) = {current_conflicts}  (no improvement)")
+            print(f"  Every neighbour has h(n) >= {current_conflicts}")
+            print("\n" + "=" * 60)
+            print("  *** STUCK AT LOCAL MINIMUM — ALGORITHM STOPS ***")
+            print("=" * 60)
+            print_board(current_board, label="LOCAL MINIMUM STATE:")
+            print_all_neighbours(current_board)
+            print("\n  SUMMARY")
+            print(f"  Initial board    : {initial_board}")
+            print(f"  Initial h(n)     : {compute_conflicts(initial_board)}")
+            print(f"  Final board      : {current_board}")
+            print(f"  Final h(n)       : {current_conflicts}  (NOT zero — not a solution)")
+            print(f"  Iterations taken : {iteration}")
+            print("\n  The algorithm improved h(n) step by step but")
+            print("  got trapped where no single queen move helps.")
+            print("  Fix: Use Random Restart or Simulated Annealing.")
+            return False
+
+        # Case 3 — Move to better neighbour
+        print(f"  Best neighbour h(n) = {best_conflicts}  (improvement found!)")
+        print(f"  Moving queen from row {current_board} ")
+        print(f"                   to  {best_board}")
+
+        current_board     = best_board
+        current_conflicts = best_conflicts
+        iteration        += 1
+
+        print_board(current_board, label=f"BOARD AFTER ITERATION {iteration}:")
+
+# -------------------------------------------------------
+# MAIN
+# -------------------------------------------------------
+if __name__ == "__main__":
+
+    # This board is verified to get stuck at h=1 after 3 iterations
+    board_stuck = [0, 6, 7, 0, 3, 7, 7, 4]
+
+    hill_climbing_no_restart(board_stuck)
+
+    output
+
+    ============================================================
+   8-Queens Problem - Pure Hill Climbing (No Restart)
+   Objective : Demonstrate the LOCAL MINIMA problem
+============================================================
+
+INITIAL BOARD STATE:
++---+---+---+---+---+---+---+---+
+| Q | . | . | Q | . | . | . | . |
++---+---+---+---+---+---+---+---+
+| . | . | . | . | . | . | . | . |
++---+---+---+---+---+---+---+---+
+| . | . | . | . | . | . | . | . |
++---+---+---+---+---+---+---+---+
+| . | . | . | . | Q | . | . | . |
++---+---+---+---+---+---+---+---+
+| . | . | . | . | . | . | . | Q |
++---+---+---+---+---+---+---+---+
+| . | . | . | . | . | . | . | . |
++---+---+---+---+---+---+---+---+
+| . | Q | . | . | . | . | . | . |
++---+---+---+---+---+---+---+---+
+| . | . | Q | . | . | Q | Q | . |
++---+---+---+---+---+---+---+---+
+  Board         : [0, 6, 7, 0, 3, 7, 7, 4]
+  Conflicts h(n): 7
+
+------------------------------------------------------------
+  ITERATION 0
+  Current h(n) = 7
+  Scanning all 56 neighbours...
+------------------------------------------------------------
+  Best neighbour h(n) = 5  (improvement found!)
+  Moving queen from row [0, 6, 7, 0, 3, 7, 7, 4] 
+                   to  [0, 5, 7, 0, 3, 7, 7, 4]
+
+BOARD AFTER ITERATION 1:
++---+---+---+---+---+---+---+---+
+| Q | . | . | Q | . | . | . | . |
++---+---+---+---+---+---+---+---+
+| . | . | . | . | . | . | . | . |
++---+---+---+---+---+---+---+---+
+| . | . | . | . | . | . | . | . |
++---+---+---+---+---+---+---+---+
+| . | . | . | . | Q | . | . | . |
++---+---+---+---+---+---+---+---+
+| . | . | . | . | . | . | . | Q |
++---+---+---+---+---+---+---+---+
+| . | Q | . | . | . | . | . | . |
++---+---+---+---+---+---+---+---+
+| . | . | . | . | . | . | . | . |
++---+---+---+---+---+---+---+---+
+| . | . | Q | . | . | Q | Q | . |
++---+---+---+---+---+---+---+---+
+  Board         : [0, 5, 7, 0, 3, 7, 7, 4]
+  Conflicts h(n): 5
+
+------------------------------------------------------------
+  ITERATION 1
+  Current h(n) = 5
+  Scanning all 56 neighbours...
+------------------------------------------------------------
+  Best neighbour h(n) = 3  (improvement found!)
+  Moving queen from row [0, 5, 7, 0, 3, 7, 7, 4] 
+                   to  [0, 5, 7, 1, 3, 7, 7, 4]
+
+BOARD AFTER ITERATION 2:
++---+---+---+---+---+---+---+---+
+| Q | . | . | . | . | . | . | . |
++---+---+---+---+---+---+---+---+
+| . | . | . | Q | . | . | . | . |
++---+---+---+---+---+---+---+---+
+| . | . | . | . | . | . | . | . |
++---+---+---+---+---+---+---+---+
+| . | . | . | . | Q | . | . | . |
++---+---+---+---+---+---+---+---+
+| . | . | . | . | . | . | . | Q |
++---+---+---+---+---+---+---+---+
+| . | Q | . | . | . | . | . | . |
++---+---+---+---+---+---+---+---+
+| . | . | . | . | . | . | . | . |
++---+---+---+---+---+---+---+---+
+| . | . | Q | . | . | Q | Q | . |
++---+---+---+---+---+---+---+---+
+  Board         : [0, 5, 7, 1, 3, 7, 7, 4]
+  Conflicts h(n): 3
+
+------------------------------------------------------------
+  ITERATION 2
+  Current h(n) = 3
+  Scanning all 56 neighbours...
+------------------------------------------------------------
+  Best neighbour h(n) = 1  (improvement found!)
+  Moving queen from row [0, 5, 7, 1, 3, 7, 7, 4] 
+                   to  [0, 5, 7, 1, 3, 7, 2, 4]
+
+BOARD AFTER ITERATION 3:
++---+---+---+---+---+---+---+---+
+| Q | . | . | . | . | . | . | . |
++---+---+---+---+---+---+---+---+
+| . | . | . | Q | . | . | . | . |
++---+---+---+---+---+---+---+---+
+| . | . | . | . | . | . | Q | . |
++---+---+---+---+---+---+---+---+
+| . | . | . | . | Q | . | . | . |
++---+---+---+---+---+---+---+---+
+| . | . | . | . | . | . | . | Q |
++---+---+---+---+---+---+---+---+
+| . | Q | . | . | . | . | . | . |
++---+---+---+---+---+---+---+---+
+| . | . | . | . | . | . | . | . |
++---+---+---+---+---+---+---+---+
+| . | . | Q | . | . | Q | . | . |
++---+---+---+---+---+---+---+---+
+  Board         : [0, 5, 7, 1, 3, 7, 2, 4]
+  Conflicts h(n): 1
+
+------------------------------------------------------------
+  ITERATION 3
+  Current h(n) = 1
+  Scanning all 56 neighbours...
+------------------------------------------------------------
+  Best neighbour h(n) = 1  (no improvement)
+  Every neighbour has h(n) >= 1
+
+============================================================
+  *** STUCK AT LOCAL MINIMUM — ALGORITHM STOPS ***
+============================================================
+
+LOCAL MINIMUM STATE:
++---+---+---+---+---+---+---+---+
+| Q | . | . | . | . | . | . | . |
++---+---+---+---+---+---+---+---+
+| . | . | . | Q | . | . | . | . |
++---+---+---+---+---+---+---+---+
+| . | . | . | . | . | . | Q | . |
++---+---+---+---+---+---+---+---+
+| . | . | . | . | Q | . | . | . |
++---+---+---+---+---+---+---+---+
+| . | . | . | . | . | . | . | Q |
++---+---+---+---+---+---+---+---+
+| . | Q | . | . | . | . | . | . |
++---+---+---+---+---+---+---+---+
+| . | . | . | . | . | . | . | . |
++---+---+---+---+---+---+---+---+
+| . | . | Q | . | . | Q | . | . |
++---+---+---+---+---+---+---+---+
+  Board         : [0, 5, 7, 1, 3, 7, 2, 4]
+  Conflicts h(n): 1
+
+------------------------------------------------------------
+  Proof: Analysing ALL 56 neighbours of local minimum
+------------------------------------------------------------
+  Col   New Row  Neighbour Board                  h(n)   Better?
+------------------------------------------------------------
+  0     1        [1, 5, 7, 1, 3, 7, 2, 4]         2      
+  0     2        [2, 5, 7, 1, 3, 7, 2, 4]         3      
+  0     3        [3, 5, 7, 1, 3, 7, 2, 4]         2      
+  0     4        [4, 5, 7, 1, 3, 7, 2, 4]         4      
+  0     5        [5, 5, 7, 1, 3, 7, 2, 4]         3      
+  0     6        [6, 5, 7, 1, 3, 7, 2, 4]         2      
+  0     7        [7, 5, 7, 1, 3, 7, 2, 4]         4      
+
+  1     0        [0, 0, 7, 1, 3, 7, 2, 4]         3      
+  1     1        [0, 1, 7, 1, 3, 7, 2, 4]         3      
+  1     2        [0, 2, 7, 1, 3, 7, 2, 4]         2      
+  1     3        [0, 3, 7, 1, 3, 7, 2, 4]         4      
+  1     4        [0, 4, 7, 1, 3, 7, 2, 4]         2      
+  1     6        [0, 6, 7, 1, 3, 7, 2, 4]         3      
+  1     7        [0, 7, 7, 1, 3, 7, 2, 4]         4      
+
+  2     0        [0, 5, 0, 1, 3, 7, 2, 4]         2      
+  2     1        [0, 5, 1, 1, 3, 7, 2, 4]         2      
+  2     2        [0, 5, 2, 1, 3, 7, 2, 4]         3      
+  2     3        [0, 5, 3, 1, 3, 7, 2, 4]         1      
+  2     4        [0, 5, 4, 1, 3, 7, 2, 4]         3      
+  2     5        [0, 5, 5, 1, 3, 7, 2, 4]         2      
+  2     6        [0, 5, 6, 1, 3, 7, 2, 4]         2      
+
+  3     0        [0, 5, 7, 0, 3, 7, 2, 4]         3      
+  3     2        [0, 5, 7, 2, 3, 7, 2, 4]         3      
+  3     3        [0, 5, 7, 3, 3, 7, 2, 4]         4      
+  3     4        [0, 5, 7, 4, 3, 7, 2, 4]         3      
+  3     5        [0, 5, 7, 5, 3, 7, 2, 4]         4      
+  3     6        [0, 5, 7, 6, 3, 7, 2, 4]         2      
+  3     7        [0, 5, 7, 7, 3, 7, 2, 4]         4      
+
+  4     0        [0, 5, 7, 1, 0, 7, 2, 4]         4      
+  4     1        [0, 5, 7, 1, 1, 7, 2, 4]         3      
+  4     2        [0, 5, 7, 1, 2, 7, 2, 4]         4      
+  4     4        [0, 5, 7, 1, 4, 7, 2, 4]         4      
+  4     5        [0, 5, 7, 1, 5, 7, 2, 4]         3      
+  4     6        [0, 5, 7, 1, 6, 7, 2, 4]         2      
+  4     7        [0, 5, 7, 1, 7, 7, 2, 4]         4      
+
+  5     0        [0, 5, 7, 1, 3, 0, 2, 4]         1      
+  5     1        [0, 5, 7, 1, 3, 1, 2, 4]         3      
+  5     2        [0, 5, 7, 1, 3, 2, 2, 4]         3      
+  5     3        [0, 5, 7, 1, 3, 3, 2, 4]         3      
+  5     4        [0, 5, 7, 1, 3, 4, 2, 4]         3      
+  5     5        [0, 5, 7, 1, 3, 5, 2, 4]         2      
+  5     6        [0, 5, 7, 1, 3, 6, 2, 4]         1      
+
+  6     0        [0, 5, 7, 1, 3, 7, 0, 4]         3      
+  6     1        [0, 5, 7, 1, 3, 7, 1, 4]         3      
+  6     3        [0, 5, 7, 1, 3, 7, 3, 4]         4      
+  6     4        [0, 5, 7, 1, 3, 7, 4, 4]         3      
+  6     5        [0, 5, 7, 1, 3, 7, 5, 4]         4      
+  6     6        [0, 5, 7, 1, 3, 7, 6, 4]         3      
+  6     7        [0, 5, 7, 1, 3, 7, 7, 4]         3      
+
+  7     0        [0, 5, 7, 1, 3, 7, 2, 0]         3      
+  7     1        [0, 5, 7, 1, 3, 7, 2, 1]         3      
+  7     2        [0, 5, 7, 1, 3, 7, 2, 2]         3      
+  7     3        [0, 5, 7, 1, 3, 7, 2, 3]         3      
+  7     5        [0, 5, 7, 1, 3, 7, 2, 5]         4      
+  7     6        [0, 5, 7, 1, 3, 7, 2, 6]         2      
+  7     7        [0, 5, 7, 1, 3, 7, 2, 7]         4      
+
+------------------------------------------------------------
+  RESULT: NO neighbour has h(n) < 1
+  CONCLUSION: Algorithm is stuck. Cannot move forward.
+------------------------------------------------------------
+
+  SUMMARY
+  Initial board    : [0, 6, 7, 0, 3, 7, 7, 4]
+  Initial h(n)     : 7
+  Final board      : [0, 5, 7, 1, 3, 7, 2, 4]
+  Final h(n)       : 1  (NOT zero — not a solution)
+  Iterations taken : 3
+
+  The algorithm improved h(n) step by step but
+  got trapped where no single queen move helps.
+  Fix: Use Random Restart or Simulated Annealing.
